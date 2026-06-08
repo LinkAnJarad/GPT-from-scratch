@@ -37,15 +37,15 @@ def parse_args():
     parser.add_argument("--beta2", type=float, default=0.95, help="AdamW beta2")
 
     # Data
-    parser.add_argument("--data_path", type=str, default="/project/data_memmap/tokens.memmap", help="Path to token memmap file")
+    parser.add_argument("--data_path", type=str, default="/data_memmap/tokens.memmap", help="Path to token memmap file")
     parser.add_argument("--num_workers", type=int, default=4, help="DataLoader worker count")
 
     # Logging and checkpointing
     parser.add_argument("--log_interval", type=int, default=5, help="Log training metrics every N steps")
     parser.add_argument("--save_interval", type=int, default=5000, help="Save checkpoint every N steps")
     parser.add_argument("--sample_interval", type=int, default=1000, help="Generate sample text every N steps")
-    parser.add_argument("--checkpoint_dir", type=str, default="/project/checkpoints", help="Directory for saving checkpoints")
-    parser.add_argument("--log_file", type=str, default="/project/training/train.log", help="Training log file path")
+    parser.add_argument("--checkpoint_dir", type=str, default="/checkpoints", help="Directory for saving checkpoints")
+    parser.add_argument("--log_file", type=str, default="/training/train.log", help="Training log file path")
 
     # Resume
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from")
@@ -80,9 +80,7 @@ def generate_sample_text(model, device, max_new_tokens=128, temperature=0.8, top
 
     for _ in range(max_new_tokens):
         # Crop to seq_len if necessary
-        ctx = input_ids[:, -model.out.in_features * 0 - 4096:]  # keep last seq_len tokens
-        if ctx.shape[1] > 4096:
-            ctx = ctx[:, -4096:]
+        ctx = input_ids[:, -4096:]  # keep last seq_len tokens
 
         logits = model(ctx)
         logits = logits[:, -1, :] / temperature
@@ -137,7 +135,7 @@ def load_checkpoint(filepath, model, optimizer, device):
 def main():
     args = parse_args()
 
-    # Device setup (ROCm exposes as CUDA)
+    # Device setup
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
     if torch.cuda.is_available():

@@ -7,18 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "transformers",
     "torch",
-    "pytorch-triton-rocm",
     "datasets",
     "numpy",
     "matplotlib"
 ]
-
-[[tool.uv.index]]
-name = "pytorch-rocm"
-url = "https://download.pytorch.org/whl/rocm6.2"
-explicit = true
-
-[tool.uv.sources]
-torch = [{ index = "pytorch-rocm" }]
-pytorch-triton-rocm = [{ index = "pytorch-rocm" }]
-

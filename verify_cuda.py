@@ -4,10 +4,11 @@ import matplotlib
 import transformers
 import datasets
 
-print("Checking PyTorch and ROCm status:")
+print("Checking PyTorch and CUDA status:")
 print(f"PyTorch Version: {torch.__version__}")
-print(f"ROCm / CUDA Available: {torch.cuda.is_available()}")
+print(f"CUDA Available: {torch.cuda.is_available()}")
 if torch.cuda.is_available():
+    print(f"CUDA Version: {torch.version.cuda}")
     print(f"Device Name: {torch.cuda.get_device_name(0)}")
     # Run a simple tensor calculation on GPU
     device = torch.device("cuda")
@@ -16,4 +17,4 @@ if torch.cuda.is_available():
     z = torch.matmul(x, y)
     print("Tensor calculation on GPU succeeded!")
 else:
-    print("Warning: ROCm GPU is NOT available to PyTorch!")
+    print("Warning: CUDA GPU is NOT available to PyTorch!")
