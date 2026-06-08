@@ -93,10 +93,9 @@ class GroupedQueryAttention(nn.Module):
         
         k = torch.repeat_interleave(k, self.kv_repeats, dim=2)
         v = torch.repeat_interleave(v, self.kv_repeats, dim=2)
-        
-        q = q.transpose(1, 2)
-        k = k.transpose(1, 2)
-        v = v.transpose(1, 2)
+        q = q.transpose(1, 2).contiguous()
+        k = k.transpose(1, 2).contiguous()
+        v = v.transpose(1, 2).contiguous()
         
         q = self.rope(q)
         k = self.rope(k)
@@ -194,6 +193,17 @@ class LanguageModel(nn.Module):
                 self.transformer.append(
                         TransformerBlock(dim, hidden_dim, n_heads, n_kv_heads, seq_len=seq_len, window=0, dropout=dropout)
                 )
+
+        # Apply custom weight initialization
+        self.apply(self._init_weights)
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, x):
         x = self.embedding(x)

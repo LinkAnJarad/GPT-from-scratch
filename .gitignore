@@ -1,2 +1,3 @@
 /checkpoints/*.pt
 /data_memmap/*.memmap
+/data_npy/*.npy

@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument("--n_heads", type=int, default=16, help="Number of attention heads")
     parser.add_argument("--n_kv_heads", type=int, default=8, help="Number of key/value heads (GQA)")
     parser.add_argument("--n_layers", type=int, default=20, help="Number of transformer layers")
-    parser.add_argument("--seq_len", type=int, default=4096, help="Sequence length")
+    parser.add_argument("--seq_len", type=int, default=1024, help="Sequence length")
     parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
 
     parser.add_argument("--prompt", type=str, default="Hello", help="Prompt")

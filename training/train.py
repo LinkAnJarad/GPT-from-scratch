@@ -16,17 +16,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train a causal language model")
 
     parser.add_argument("--vocab_size", type=int, default=128256, help="Tokenizer vocabulary size (Llama-3)")
-    parser.add_argument("--dim", type=int, default=1024, help="Model embedding dimension")
-    parser.add_argument("--hidden_dim", type=int, default=2816, help="SwiGLU hidden dimension (~2.75x dim)")
+    parser.add_argument("--dim", type=int, default=768, help="Model embedding dimension")
+    parser.add_argument("--hidden_dim", type=int, default=1536, help="SwiGLU hidden dimension (~2.75x dim)")
     parser.add_argument("--n_heads", type=int, default=16, help="Number of attention heads")
     parser.add_argument("--n_kv_heads", type=int, default=8, help="Number of key/value heads (GQA)")
     parser.add_argument("--n_layers", type=int, default=20, help="Number of transformer layers")
-    parser.add_argument("--seq_len", type=int, default=4096, help="Sequence length")
+    parser.add_argument("--seq_len", type=int, default=1024, help="Sequence length")
     parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
 
     # Training hyperparameters
-    parser.add_argument("--batch_size", type=int, default=8, help="Micro-batch size per step")
-    parser.add_argument("--grad_accum_steps", type=int, default=8, help="Gradient accumulation steps (effective batch = batch_size * grad_accum_steps)")
+    parser.add_argument("--batch_size", type=int, default=4, help="Micro-batch size per step")
+    parser.add_argument("--grad_accum_steps", type=int, default=32, help="Gradient accumulation steps (effective batch = batch_size * grad_accum_steps)")
     parser.add_argument("--lr", type=float, default=3e-4, help="Peak learning rate")
     parser.add_argument("--min_lr", type=float, default=3e-5, help="Minimum learning rate (end of cosine decay)")
     parser.add_argument("--warmup_steps", type=int, default=2000, help="Number of linear warmup steps")
@@ -37,15 +37,15 @@ def parse_args():
     parser.add_argument("--beta2", type=float, default=0.95, help="AdamW beta2")
 
     # Data
-    parser.add_argument("--data_path", type=str, default="/data_memmap/tokens.memmap", help="Path to token memmap file")
-    parser.add_argument("--num_workers", type=int, default=4, help="DataLoader worker count")
+    parser.add_argument("--data_path", type=str, default="data_memmap/tokens.memmap", help="Path to token memmap file")
+    parser.add_argument("--num_workers", type=int, default=8, help="DataLoader worker count")
 
     # Logging and checkpointing
     parser.add_argument("--log_interval", type=int, default=5, help="Log training metrics every N steps")
     parser.add_argument("--save_interval", type=int, default=5000, help="Save checkpoint every N steps")
     parser.add_argument("--sample_interval", type=int, default=1000, help="Generate sample text every N steps")
-    parser.add_argument("--checkpoint_dir", type=str, default="/checkpoints", help="Directory for saving checkpoints")
-    parser.add_argument("--log_file", type=str, default="/training/train.log", help="Training log file path")
+    parser.add_argument("--checkpoint_dir", type=str, default="checkpoints", help="Directory for saving checkpoints")
+    parser.add_argument("--log_file", type=str, default="training/train.log", help="Training log file path")
 
     # Resume
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from")
@@ -80,7 +80,7 @@ def generate_sample_text(model, device, max_new_tokens=128, temperature=0.8, top
 
     for _ in range(max_new_tokens):
         # Crop to seq_len if necessary
-        ctx = input_ids[:, -4096:]  # keep last seq_len tokens
+        ctx = input_ids[:, -args.seq_len:]  # keep last seq_len tokens
 
         logits = model(ctx)
         logits = logits[:, -1, :] / temperature
@@ -200,6 +200,9 @@ def main():
 
     loss_fn = nn.CrossEntropyLoss()
 
+    # Create a GradScaler for mixed precision with float16
+    scaler = torch.cuda.amp.GradScaler()
+
     # Resume from checkpoint if specified
     start_step = 0
     if args.resume:
@@ -249,23 +252,25 @@ def main():
             y = y.to(device)
 
             # Forward pass with mixed precision
-            with torch.autocast("cuda", dtype=torch.bfloat16):
+            with torch.autocast("cuda", dtype=torch.float16):
                 logits = model(x)
                 # Reshape for cross-entropy: (batch * seq_len, vocab_size) vs (batch * seq_len,)
                 loss = loss_fn(logits.view(-1, logits.size(-1)), y.view(-1))
                 # Scale loss by accumulation steps to average gradients correctly
                 scaled_loss = loss / args.grad_accum_steps
                 
-            scaled_loss.backward()
+            scaler.scale(scaled_loss).backward()
 
             accum_loss += loss.item()
             tokens_processed += x.numel()
 
         # Gradient clipping
+        scaler.unscale_(optimizer)
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
 
         # Optimizer step
-        optimizer.step()
+        scaler.step(optimizer)
+        scaler.update()
 
         # Track loss
         avg_loss = accum_loss / args.grad_accum_steps

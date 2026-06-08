@@ -13,10 +13,11 @@ x = torch.randint(0, 128256, (8, 4096), device=device)
 y = torch.randint(0, 128256, (8, 4096), device=device)
 loss_fn = torch.nn.CrossEntropyLoss()
 
+scaler = torch.cuda.amp.GradScaler()
 torch.cuda.reset_peak_memory_stats()
-with torch.autocast("cuda", dtype=torch.bfloat16):
+with torch.autocast("cuda", dtype=torch.float16):
     logits = model(x)
     loss = loss_fn(logits.view(-1, logits.size(-1)), y.view(-1))
-loss.backward()
+scaler.scale(loss).backward()
 
 print(f"Peak memory: {torch.cuda.max_memory_allocated() / 1e9:.2f} GB")

@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="/project/data",
+        default="/data_npy",
         help="Directory to save tokenized chunks (.npy files)"
     )
     parser.add_argument(
@@ -77,29 +77,45 @@ def main():
         dtype = np.uint16
         print(f"Vocab size is {vocab_size} (<= 65,535). Using np.uint16.")
 
-    # Dataset configs
     # We define paths, configurations, splits, text columns, and weights.
+    # Note: Since average document lengths vary greatly across datasets (e.g. GitHub is very
+    # long, Reddit is very short), the document weights below are set to produce a final token
+    # ratio of: Ultra-FineWeb ~60%, GitHub ~3%, Books ~14%, Wikipedia ~14%, Reddit ~7%.
     dataset_configs = [
         {
             "path": "openbmb/Ultra-FineWeb",
             "name": None,
             "split": "en",
             "text_column": "content",
-            "weight": 0.4,
+            "weight": 0.65,
         },
         {
-            "path": "Salesforce/wikitext",
-            "name": "wikitext-103-raw-v1",
+            "path": "thomwolf/github-dataset",
+            "name": None,
+            "split": "train",
+            "text_column": "content",
+            "weight": 0.01,
+        },
+        {
+            "path": "applied-ai-018/pretraining_v1-omega_books",
+            "name": None,
             "split": "train",
             "text_column": "text",
-            "weight": 0.2,
+            "weight": 0.14,
+        },
+        {
+            "path": "wikimedia/wikipedia",
+            "name": "20231101.en",
+            "split": "train",
+            "text_column": "text",
+            "weight": 0.12,
         },
         {
             "path": "tensorshield/reddit_dataset_157",
             "name": None,
             "split": "train",
             "text_column": "text",
-            "weight": 0.3,
+            "weight": 0.50,
         },
     ]
 
