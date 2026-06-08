@@ -15,13 +15,13 @@ def parse_args():
     parser.add_argument(
         "--input_dir",
         type=str,
-        default="/project/data",
+        default="/data_npy",
         help="Directory containing the tokens_*.npy files"
     )
     parser.add_argument(
         "--output_file",
         type=str,
-        default="/project/data/tokens.memmap",
+        default="/data_memmap/tokens.memmap",
         help="Path to the output memmap file"
     )
     return parser.parse_args()

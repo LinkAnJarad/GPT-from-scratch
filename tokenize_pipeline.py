@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument(
         "--target_tokens",
         type=int,
-        default=20_000_000_000,
+        default=1_000_000_000,
         help="Total target tokens to extract (approximate)"
     )
     parser.add_argument(
@@ -49,7 +49,7 @@ def parse_args():
     parser.add_argument(
         "--seed",
         type=int,
-        default=42,
+        default=314159,
         help="Random seed for dataset interleaving"
     )
     return parser.parse_args()
@@ -85,7 +85,7 @@ def main():
             "name": None,
             "split": "en",
             "text_column": "content",
-            "weight": 0.6,
+            "weight": 0.4,
         },
         {
             "path": "Salesforce/wikitext",
@@ -95,11 +95,11 @@ def main():
             "weight": 0.2,
         },
         {
-            "path": "sedthh/gutenberg_english",
+            "path": "tensorshield/reddit_dataset_157",
             "name": None,
             "split": "train",
-            "text_column": "TEXT",
-            "weight": 0.2,
+            "text_column": "text",
+            "weight": 0.3,
         },
     ]
 

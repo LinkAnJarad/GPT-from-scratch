@@ -174,7 +174,8 @@ class LanguageModel(nn.Module):
         self.embedding = nn.Embedding(vocab_size, dim)
         self.transformer = nn.ModuleList([])
         self.norm = nn.RMSNorm(dim)
-        self.out = nn.Linear(dim, vocab_size)
+        self.out = nn.Linear(dim, vocab_size, bias=False)
+        self.out.weight = self.embedding.weight
 
         if local_att_every > 0:
 
