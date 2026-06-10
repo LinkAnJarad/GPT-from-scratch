@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument(
         "--tokenizer_name",
         type=str,
-        default="unsloth/llama-3-8b",
+        default="unsloth/llama-2-7b",
         help="HF tokenizer to use for decoding validation"
     )
     parser.add_argument(

@@ -15,7 +15,7 @@ from dataloader import get_dataloader
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a causal language model")
 
-    parser.add_argument("--vocab_size", type=int, default=128256, help="Tokenizer vocabulary size (Llama-3)")
+    parser.add_argument("--vocab_size", type=int, default=32000, help="Tokenizer vocabulary size (Llama-2)")
     parser.add_argument("--dim", type=int, default=256, help="Model embedding dimension")
     parser.add_argument("--hidden_dim", type=int, default=768, help="SwiGLU hidden dimension (~2.75x dim)")
     parser.add_argument("--n_heads", type=int, default=8, help="Number of attention heads")
@@ -76,7 +76,7 @@ def generate_sample_text(model, device, seq_len, max_new_tokens=128, temperature
     """Generate a short text sample from the model for qualitative monitoring."""
     model.eval()
     # Start from a BOS-like token (token id 1, or use a small prompt)
-    input_ids = torch.tensor([[128000]], dtype=torch.long, device=device)  # Llama-3 <|begin_of_text|>
+    input_ids = torch.tensor([[1]], dtype=torch.long, device=device)  # Llama-2 <s>
 
     for _ in range(max_new_tokens):
         # Crop to seq_len if necessary
@@ -94,8 +94,8 @@ def generate_sample_text(model, device, seq_len, max_new_tokens=128, temperature
         next_token = torch.multinomial(probs, num_samples=1)
         input_ids = torch.cat([input_ids, next_token], dim=1)
 
-        # Stop on EOS (Llama-3 EOS token id = 128001)
-        if next_token.item() == 128001:
+        # Stop on EOS (Llama-2 EOS token id = 2)
+        if next_token.item() == 2:
             break
 
     model.train()
@@ -143,7 +143,7 @@ def main():
 
     from transformers import AutoTokenizer
     print("Loading tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained("unsloth/llama-3-8b")
+    tokenizer = AutoTokenizer.from_pretrained("unsloth/llama-2-7b")
 
     # Create checkpoint directory
     os.makedirs(args.checkpoint_dir, exist_ok=True)

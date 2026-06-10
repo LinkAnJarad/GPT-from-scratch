@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument(
         "--tokenizer_name",
         type=str,
-        default="unsloth/llama-3-8b",
+        default="unsloth/llama-2-7b",
         help="HF model path or name for the tokenizer"
     )
     parser.add_argument(
@@ -69,7 +69,7 @@ def main():
     vocab_size = len(tokenizer)
     
     # Determine appropriate numpy dtype to prevent overflow
-    # Llama 3 has a vocabulary size of 128,256, which exceeds the max of uint16 (65,535).
+    # Llama 2 has a vocabulary size of 32,000, which fits in uint16 (65,535).
     if vocab_size > 65535:
         dtype = np.uint32
         print(f"Vocab size is {vocab_size} (> 65,535). Using np.uint32 to prevent overflow.")
