@@ -8,12 +8,12 @@ def parse_args():
         description="Calculate the parameter count and structural breakdown of the LanguageModel."
     )
     parser.add_argument("--vocab_size", type=int, default=128256, help="Tokenizer vocabulary size")
-    parser.add_argument("--dim", type=int, default=768, help="Model embedding dimension")
-    parser.add_argument("--hidden_dim", type=int, default=2304, help="SwiGLU hidden dimension")
-    parser.add_argument("--n_heads", type=int, default=16, help="Number of attention heads")
-    parser.add_argument("--n_kv_heads", type=int, default=8, help="Number of key/value heads (GQA)")
-    parser.add_argument("--n_layers", type=int, default=20, help="Number of transformer layers")
-    parser.add_argument("--seq_len", type=int, default=1024, help="Sequence length")
+    parser.add_argument("--dim", type=int, default=256, help="Model embedding dimension")
+    parser.add_argument("--hidden_dim", type=int, default=768, help="SwiGLU hidden dimension")
+    parser.add_argument("--n_heads", type=int, default=8, help="Number of attention heads")
+    parser.add_argument("--n_kv_heads", type=int, default=4, help="Number of key/value heads (GQA)")
+    parser.add_argument("--n_layers", type=int, default=10, help="Number of transformer layers")
+    parser.add_argument("--seq_len", type=int, default=512, help="Sequence length")
     parser.add_argument("--local_att_every", type=int, default=-1, help="Local attention interval")
     parser.add_argument("--window", type=int, default=128, help="Local attention window size")
     
