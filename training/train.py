@@ -16,17 +16,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train a causal language model")
 
     parser.add_argument("--vocab_size", type=int, default=128256, help="Tokenizer vocabulary size (Llama-3)")
-    parser.add_argument("--dim", type=int, default=768, help="Model embedding dimension")
-    parser.add_argument("--hidden_dim", type=int, default=1536, help="SwiGLU hidden dimension (~2.75x dim)")
-    parser.add_argument("--n_heads", type=int, default=16, help="Number of attention heads")
-    parser.add_argument("--n_kv_heads", type=int, default=8, help="Number of key/value heads (GQA)")
-    parser.add_argument("--n_layers", type=int, default=20, help="Number of transformer layers")
-    parser.add_argument("--seq_len", type=int, default=1024, help="Sequence length")
+    parser.add_argument("--dim", type=int, default=256, help="Model embedding dimension")
+    parser.add_argument("--hidden_dim", type=int, default=768, help="SwiGLU hidden dimension (~2.75x dim)")
+    parser.add_argument("--n_heads", type=int, default=8, help="Number of attention heads")
+    parser.add_argument("--n_kv_heads", type=int, default=4, help="Number of key/value heads (GQA)")
+    parser.add_argument("--n_layers", type=int, default=10, help="Number of transformer layers")
+    parser.add_argument("--seq_len", type=int, default=512, help="Sequence length")
     parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
 
     # Training hyperparameters
-    parser.add_argument("--batch_size", type=int, default=4, help="Micro-batch size per step")
-    parser.add_argument("--grad_accum_steps", type=int, default=32, help="Gradient accumulation steps (effective batch = batch_size * grad_accum_steps)")
+    parser.add_argument("--batch_size", type=int, default=10, help="Micro-batch size per step")
+    parser.add_argument("--grad_accum_steps", type=int, default=16, help="Gradient accumulation steps (effective batch = batch_size * grad_accum_steps)")
     parser.add_argument("--lr", type=float, default=3e-4, help="Peak learning rate")
     parser.add_argument("--min_lr", type=float, default=3e-5, help="Minimum learning rate (end of cosine decay)")
     parser.add_argument("--warmup_steps", type=int, default=2000, help="Number of linear warmup steps")
@@ -72,7 +72,7 @@ def get_lr(step, warmup_steps, max_steps, lr, min_lr):
 # Sample text generation (greedy, for monitoring training quality)
 # ---------------------------------------------------------------------------
 @torch.no_grad()
-def generate_sample_text(model, device, max_new_tokens=128, temperature=0.8, top_k=50):
+def generate_sample_text(model, device, seq_len, max_new_tokens=128, temperature=0.8, top_k=50):
     """Generate a short text sample from the model for qualitative monitoring."""
     model.eval()
     # Start from a BOS-like token (token id 1, or use a small prompt)
@@ -80,7 +80,7 @@ def generate_sample_text(model, device, max_new_tokens=128, temperature=0.8, top
 
     for _ in range(max_new_tokens):
         # Crop to seq_len if necessary
-        ctx = input_ids[:, -args.seq_len:]  # keep last seq_len tokens
+        ctx = input_ids[:, -seq_len:]  # keep last seq_len tokens
 
         logits = model(ctx)
         logits = logits[:, -1, :] / temperature
@@ -312,7 +312,7 @@ def main():
         # ---------------------------------------------------------------
         if (step + 1) % args.sample_interval == 0:
             print(f"\n--- Sample at step {step + 1} ---")
-            token_ids = generate_sample_text(model, device, max_new_tokens=128, temperature=0.8, top_k=50)
+            token_ids = generate_sample_text(model, device, args.seq_len, max_new_tokens=128, temperature=0.8, top_k=50)
             print(f"  Token IDs (first 64): {token_ids[:64]}")
             print(f"  Total tokens generated: {len(token_ids)}")
             
