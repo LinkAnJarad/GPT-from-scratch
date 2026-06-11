@@ -16,17 +16,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train a causal language model")
 
     parser.add_argument("--vocab_size", type=int, default=32000, help="Tokenizer vocabulary size (Llama-2)")
-    parser.add_argument("--dim", type=int, default=256, help="Model embedding dimension")
-    parser.add_argument("--hidden_dim", type=int, default=768, help="SwiGLU hidden dimension (~2.75x dim)")
-    parser.add_argument("--n_heads", type=int, default=8, help="Number of attention heads")
-    parser.add_argument("--n_kv_heads", type=int, default=4, help="Number of key/value heads (GQA)")
-    parser.add_argument("--n_layers", type=int, default=10, help="Number of transformer layers")
-    parser.add_argument("--seq_len", type=int, default=512, help="Sequence length")
+    parser.add_argument("--dim", type=int, default=512, help="Model embedding dimension")
+    parser.add_argument("--hidden_dim", type=int, default=1536, help="SwiGLU hidden dimension (~2.75x dim)")
+    parser.add_argument("--n_heads", type=int, default=16, help="Number of attention heads")
+    parser.add_argument("--n_kv_heads", type=int, default=8, help="Number of key/value heads (GQA)")
+    parser.add_argument("--n_layers", type=int, default=12, help="Number of transformer layers")
+    parser.add_argument("--seq_len", type=int, default=1024, help="Sequence length")
     parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
 
     # Training hyperparameters
-    parser.add_argument("--batch_size", type=int, default=10, help="Micro-batch size per step")
-    parser.add_argument("--grad_accum_steps", type=int, default=16, help="Gradient accumulation steps (effective batch = batch_size * grad_accum_steps)")
+    parser.add_argument("--batch_size", type=int, default=12, help="Micro-batch size per step")
+    parser.add_argument("--grad_accum_steps", type=int, default=8, help="Gradient accumulation steps (effective batch = batch_size * grad_accum_steps)")
     parser.add_argument("--lr", type=float, default=3e-4, help="Peak learning rate")
     parser.add_argument("--min_lr", type=float, default=3e-5, help="Minimum learning rate (end of cosine decay)")
     parser.add_argument("--warmup_steps", type=int, default=2000, help="Number of linear warmup steps")
@@ -42,8 +42,8 @@ def parse_args():
 
     # Logging and checkpointing
     parser.add_argument("--log_interval", type=int, default=5, help="Log training metrics every N steps")
-    parser.add_argument("--save_interval", type=int, default=5000, help="Save checkpoint every N steps")
-    parser.add_argument("--sample_interval", type=int, default=1000, help="Generate sample text every N steps")
+    parser.add_argument("--save_interval", type=int, default=2500, help="Save checkpoint every N steps")
+    parser.add_argument("--sample_interval", type=int, default=500, help="Generate sample text every N steps")
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints", help="Directory for saving checkpoints")
     parser.add_argument("--log_file", type=str, default="training/train.log", help="Training log file path")
 
@@ -222,13 +222,14 @@ def main():
     data_iter = iter(dataloader)
     running_loss = 0.0
     tokens_processed = 0
+    total_tokens_processed = 0
     train_start_time = time.time()
     step_start_time = time.time()
 
     # Open log file for writing metrics
     log_f = open(args.log_file, "a")
     if start_step == 0:
-        log_f.write("step,loss,lr,tokens_per_sec,elapsed_min\n")
+        log_f.write("step,loss,lr,tokens_per_sec,total_tokens,elapsed_min\n")
 
     for step in range(start_step, args.max_steps):
         # Update learning rate
@@ -263,6 +264,7 @@ def main():
 
             accum_loss += loss.item()
             tokens_processed += x.numel()
+            total_tokens_processed += x.numel()
 
         # Gradient clipping
         scaler.unscale_(optimizer)
@@ -290,10 +292,11 @@ def main():
                 f"Loss: {avg_running_loss:.4f} | "
                 f"LR: {lr:.2e} | "
                 f"Tok/s: {tok_per_sec:,.0f} | "
+                f"Total Tok: {total_tokens_processed:,} | "
                 f"Elapsed: {elapsed / 60:.1f}min"
             )
 
-            log_f.write(f"{step + 1},{avg_running_loss:.6f},{lr:.8f},{tok_per_sec:.0f},{elapsed / 60:.2f}\n")
+            log_f.write(f"{step + 1},{avg_running_loss:.6f},{lr:.8f},{tok_per_sec:.0f},{total_tokens_processed},{elapsed / 60:.2f}\n")
             log_f.flush()
 
             running_loss = 0.0

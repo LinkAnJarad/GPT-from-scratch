@@ -9,7 +9,7 @@ class MemmapDataset(Dataset):
     Lazily loads the numpy memmap to prevent multiprocessing file handle conflicts
     when num_workers > 0.
     """
-    def __init__(self, filepath, seq_len, dtype=np.uint32):
+    def __init__(self, filepath, seq_len, dtype=np.uint16):
         self.filepath = filepath
         self.seq_len = seq_len
         self.dtype = np.dtype(dtype)
@@ -46,7 +46,7 @@ def get_dataloader(
     filepath="/project/data_memmap/tokens.memmap",
     seq_len=2048,
     batch_size=8,
-    dtype=np.uint32,
+    dtype=np.uint16,
     num_workers=4,
     pin_memory=True,
     shuffle=False, # Dont shuffle: causes overhead
